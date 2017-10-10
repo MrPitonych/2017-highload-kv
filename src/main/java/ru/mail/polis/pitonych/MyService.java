@@ -10,9 +10,7 @@ import java.util.NoSuchElementException;
 
 public class MyService implements KVService {
     private static final String PREFIX = "id=";
-    @NotNull
     private final HttpServer server;
-    @NotNull
     private final MyDAO dao;
 
 
@@ -63,17 +61,17 @@ public class MyService implements KVService {
                                 if (contentLength != 0 && http.getRequestBody().read(putValue) != putValue.length) {
                                     throw new IOException("can't read");
                                 }
-
                                 dao.upsert(id, putValue);
                                 http.sendResponseHeaders(201, contentLength);
                                 http.getResponseBody().write(putValue);
                                 break;
-
+                            } catch (IllegalArgumentException e) {
+                                http.sendResponseHeaders(400, 0);
                             } catch (NoSuchElementException e) {
                                 http.sendResponseHeaders(404, 0);
                             }
                         default:
-                            http.sendResponseHeaders(404, 0);
+                            http.sendResponseHeaders(503, 0);
                     }
 
                     http.close();
@@ -90,6 +88,7 @@ public class MyService implements KVService {
         if (key.isEmpty()) {
             throw new IllegalArgumentException("empty id!");
         }
+
         return query.substring(PREFIX.length());
     }
 
