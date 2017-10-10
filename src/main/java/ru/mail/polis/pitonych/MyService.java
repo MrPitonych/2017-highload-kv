@@ -9,9 +9,11 @@ import java.net.InetSocketAddress;
 import java.util.NoSuchElementException;
 
 public class MyService implements KVService {
-    private static final String PREFIX = "id=";
+    @NotNull
     private final HttpServer server;
+    @NotNull
     private final MyDAO dao;
+    private final static String PREFIX = "id=";
 
 
     public MyService(int port, @NotNull final MyDAO dao) throws IOException {
