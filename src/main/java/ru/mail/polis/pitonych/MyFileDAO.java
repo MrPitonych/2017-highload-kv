@@ -2,45 +2,44 @@ package ru.mail.polis.pitonych;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.io.*;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.NoSuchElementException;
 
 public class MyFileDAO implements MyDAO {
-    @NotNull
-    private final File dir;
+    private final String dir;
 
-    public MyFileDAO(@NotNull final File dir) {
+    public MyFileDAO(String dir) {
         this.dir = dir;
     }
 
-    private File getFile(@NotNull final String key) {
-        return new File(dir, key);
+    private Path getPath(String id) {
+        if (id.isEmpty()) {
+            throw new IllegalArgumentException("ID is empty");
+        }
+        return Paths.get(dir, id);
     }
 
     @NotNull
     @Override
-    public byte[] get(@NotNull String key) throws NoSuchElementException, IllegalArgumentException, IOException {
-        final File file = new File(dir, key);
-        final byte[] value = new byte[(int) file.length()];
-        try (InputStream is = new FileInputStream(file)) {
-            if (is.read(value) != value.length) {
-                throw new IOException("can't read file");
-            }
+    public byte[] get(@NotNull String id) throws NoSuchElementException, IllegalArgumentException, IOException {
+        Path path = getPath(id);
+        if (!Files.exists(path)) {
+            throw new NoSuchElementException("void ID: " + id);
         }
-        return value;
+        return Files.readAllBytes(getPath(id));
     }
 
     @Override
-    public void upsert(@NotNull final String key, @NotNull final byte[] value) throws IllegalArgumentException, IOException {
-        try (OutputStream os = new FileOutputStream(getFile(key))) {
-            os.write(value);
-        }
-
+    public void upsert(@NotNull String id, @NotNull byte[] value) throws IllegalArgumentException, IOException {
+        Files.write(getPath(id), value);
     }
 
-    @NotNull
     @Override
-    public void delete(String key) throws IllegalArgumentException, IOException {
-        getFile(key).delete();
+    public void delete(@NotNull String id) throws IllegalArgumentException, IOException {
+        Files.deleteIfExists(getPath(id));
     }
+
 }
