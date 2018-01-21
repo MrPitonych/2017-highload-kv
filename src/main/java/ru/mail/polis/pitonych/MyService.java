@@ -52,9 +52,11 @@ public class MyService implements KVService {
                     case "PUT":
                         try {
                             ByteArrayOutputStream putValue = new ByteArrayOutputStream();
+                            InputStream getValue = http.getRequestBody();
+                            byte[] buffer = new byte[8192];
                             int lenB;
-                            while ((lenB = http.getRequestBody().read()) != -1) {
-                                putValue.write(lenB);
+                            while ((lenB = getValue.read(buffer)) != -1) {
+                                putValue.write(buffer, 0, lenB);
                             }
                             dao.upsert(id, putValue.toByteArray());
                             http.sendResponseHeaders(201, 0);
