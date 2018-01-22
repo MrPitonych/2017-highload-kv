@@ -35,7 +35,6 @@ public class MyService implements KVService {
             final String id;
             try {
                 id = extractId(http.getRequestURI().getQuery());
-
                 switch (http.getRequestMethod()) {
                     case "GET":
                         try {
