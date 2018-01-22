@@ -8,13 +8,13 @@ import ru.mail.polis.KVService;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.util.NoSuchElementException;
 
 public class MyService implements KVService {
 
     private static final String PREFIX = "id=";
-
     @NotNull
     private final HttpServer server;
     @NotNull
@@ -35,52 +35,37 @@ public class MyService implements KVService {
             final String id;
             try {
                 id = extractId(http.getRequestURI().getQuery());
+
                 switch (http.getRequestMethod()) {
                     case "GET":
                         try {
                             final byte[] getValue = dao.get(id);
                             http.sendResponseHeaders(200, getValue.length);
                             http.getResponseBody().write(getValue);
-                            http.close();
-                        } catch (IllegalArgumentException e) {
-                            http.sendResponseHeaders(400, 0);
-                            http.close();
                         } catch (NoSuchElementException e) {
                             http.sendResponseHeaders(404, 0);
-                            http.close();
                         }
                         break;
                     case "PUT":
-                        try {
-                            ByteArrayOutputStream putValue = new ByteArrayOutputStream();
-                            int lenB;
-                            while ((lenB = http.getRequestBody().read()) != -1) {
-                                putValue.write(lenB);
-                            }
-                            dao.upsert(id, putValue.toByteArray());
-                            http.sendResponseHeaders(201, 0);
-                            http.close();
-                        } catch (IOException | IllegalArgumentException e) {
-                            http.sendResponseHeaders(400, 0);
-                            http.close();
+                        ByteArrayOutputStream putValue = new ByteArrayOutputStream();
+                        InputStream getValue = http.getRequestBody();
+                        byte[] buffer = new byte[8192];
+                        int lenB;
+                        while ((lenB = getValue.read(buffer)) != -1) {
+                            putValue.write(buffer, 0, lenB);
                         }
+                        dao.upsert(id, putValue.toByteArray());
+                        http.sendResponseHeaders(201, 0);
                         break;
                     case "DELETE":
-                        try {
-                            dao.delete(id);
-                            http.sendResponseHeaders(202, 0);
-                            http.close();
-                        } catch (IllegalArgumentException e) {
-                            http.sendResponseHeaders(400, 0);
-                            http.getResponseBody().write(e.getMessage().getBytes());
-                            http.close();
-                        }
+                        dao.delete(id);
+                        http.sendResponseHeaders(202, 0);
                         break;
                     default:
                         http.sendResponseHeaders(405, 0);
-                        http.close();
                         break;
                 }
+                http.close();
 
             } catch (IllegalArgumentException e) {
                 http.sendResponseHeaders(400, 0);
